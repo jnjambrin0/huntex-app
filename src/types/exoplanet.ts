@@ -29,6 +29,34 @@ export interface ExoplanetResult {
 }
 
 /**
+ * Preprocessing Statistics
+ * Metadata about CSV preprocessing (normalization, cleaning, transformations)
+ */
+export interface PreprocessingStats {
+  original_rows: number      // Original CSV row count
+  processed_rows: number     // Rows that passed all validation
+  removed_rows: number       // Rows removed during preprocessing
+  warnings: string[]         // Non-fatal issues (e.g., duplicates removed)
+  errors: Array<{            // Fatal issues per row
+    row: number
+    message: string
+  }>
+}
+
+/**
+ * API Response with Preprocessing
+ * Enhanced response from /api/preprocess-and-predict endpoint
+ */
+export interface PreprocessAndPredictResponse {
+  entries: ExoplanetResult[]         // Predictions with processed feature values
+  errors: Array<{                    // Prediction errors per row
+    row: number
+    message: string
+  }>
+  preprocessing: PreprocessingStats  // Preprocessing metadata
+}
+
+/**
  * Results State
  * Represents the loading/success/error states for the results
  */

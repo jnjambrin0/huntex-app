@@ -278,8 +278,19 @@ export function ResultsPage({ results }: ResultsPageProps) {
   }, [])
 
   // Progressive revelation effect - reveals exoplanets one by one with exactly 1000ms delay
+  // CRITICAL: Only show CONFIRMED and CANDIDATE, filter out FALSE POSITIVE
   useEffect(() => {
     if (!results || results.length === 0) return
+
+    // Filter to show only valid exoplanet detections
+    const validExoplanets = results.filter(result =>
+      result.label === 'CONFIRMED' || result.label === 'CANDIDATE'
+    )
+
+    if (validExoplanets.length === 0) {
+      console.log('No exoplanets detected (all FALSE POSITIVE)')
+      return
+    }
 
     const timeouts: ReturnType<typeof setTimeout>[] = []
 
@@ -318,7 +329,8 @@ export function ResultsPage({ results }: ResultsPageProps) {
     }
 
     // Schedule progressive revelation: 1 exoplanet every 1000ms
-    results.forEach((result, index) => {
+    // Only reveal CONFIRMED and CANDIDATE exoplanets
+    validExoplanets.forEach((result, index) => {
       const timeout = setTimeout(() => {
         revealExoplanet(result, index)
       }, index * 1000) // 0ms, 1000ms, 2000ms, 3000ms...

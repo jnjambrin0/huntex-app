@@ -97,7 +97,15 @@ def predict_bulk(csv_path: Path) -> Dict[str, Any]:
                 features = ensure_features(row_payload, feature_names)
                 predicted_index = int(model.predict([features])[0])
                 label = index_to_label.get(predicted_index, "UNKNOWN")
-                entries.append({"row": idx, "label": label})
+
+                # Build entry with label AND processed feature values
+                entry = {"row": idx, "label": label}
+
+                # Add all feature values that the model actually saw
+                for i, feat_name in enumerate(feature_names):
+                    entry[feat_name] = features[i]
+
+                entries.append(entry)
             except Exception as exc:  # capture row-specific issues
                 errors.append({"row": idx, "message": str(exc)})
 

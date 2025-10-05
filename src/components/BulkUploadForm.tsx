@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Upload, FileText, ArrowLeft, Loader2 } from 'lucide-react'
-import type { ExoplanetResult } from '../types/exoplanet'
+import type { ExoplanetResult, PreprocessAndPredictResponse } from '../types/exoplanet'
 
 interface BulkUploadFormProps {
   onBack: () => void
@@ -141,12 +141,12 @@ export function BulkUploadForm({ onBack, onConfirm, onResultsReceived }: BulkUpl
     // Optimistic transition: trigger hyperspace immediately
     onConfirm?.()
 
-    // Background upload - transform backend response to ExoplanetResult[]
+    // Background upload - use new preprocess-and-predict endpoint
     const formData = new FormData()
     formData.append('file', file)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/bulk-upload`, {
+      const response = await fetch(`${API_BASE_URL}/api/preprocess-and-predict`, {
         method: 'POST',
         body: formData,
       })
@@ -155,14 +155,23 @@ export function BulkUploadForm({ onBack, onConfirm, onResultsReceived }: BulkUpl
 
       if (!response.ok) {
         console.error('Upload failed:', data?.error ?? 'Upload failed')
+        console.error('Preprocessing errors:', data?.preprocessing_errors)
         onResultsReceived?.([]) // Send empty array on error
       } else {
-        console.log('Upload successful:', data)
+        const typedData = data as PreprocessAndPredictResponse
+        console.log('Upload successful:', typedData)
+        console.log('Preprocessing stats:', {
+          original: typedData.preprocessing.original_rows,
+          processed: typedData.preprocessing.processed_rows,
+          removed: typedData.preprocessing.removed_rows,
+          warnings: typedData.preprocessing.warnings
+        })
 
-        // Transform backend response to ExoplanetResult[]
-        const transformedResults: ExoplanetResult[] = data.entries?.map((entry: any) => ({
+        // Backend now returns entries with ALL processed feature values
+        const transformedResults: ExoplanetResult[] = typedData.entries?.map((entry) => ({
           row: entry.row,
-          label: entry.label as 'CONFIRMED' | 'CANDIDATE' | 'FALSE POSITIVE',
+          label: entry.label,
+          // Features are already processed (log-transformed) by the backend
           koi_period: entry.koi_period,
           koi_depth: entry.koi_depth,
           koi_duration: entry.koi_duration,
@@ -174,7 +183,7 @@ export function BulkUploadForm({ onBack, onConfirm, onResultsReceived }: BulkUpl
           koi_srad: entry.koi_srad,
           koi_model_snr: entry.koi_model_snr,
           koi_impact: entry.koi_impact,
-          name: entry.name,
+          name: `KOI-${entry.row.toString().padStart(4, '0')}`,
           discoveryDate: new Date().toLocaleDateString()
         })) ?? []
 

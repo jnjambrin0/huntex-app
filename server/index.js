@@ -102,7 +102,7 @@ app.post('/api/bulk-upload', upload.single('file'), async (req, res) => {
   }
 
   const { path: tempPath, originalname, size } = req.file
-  log('bulk-upload start', { originalname, size })
+  log('bulk-upload start (legacy endpoint)', { originalname, size })
 
   try {
     const pythonOutput = await runPython(['--mode', 'bulk', '--csv', tempPath])
@@ -124,6 +124,134 @@ app.post('/api/bulk-upload', upload.single('file'), async (req, res) => {
         await fs.unlink(tempPath)
       } catch (cleanupError) {
         log('bulk-upload cleanup error', { error: cleanupError.message })
+      }
+    }
+  }
+})
+
+/**
+ * Primary bulk upload endpoint with automatic CSV preprocessing.
+ *
+ * Accepts raw Kepler CSVs in any format and automatically:
+ * - Normalizes column names (case-insensitive)
+ * - Removes data leakage features
+ * - Validates physical ranges
+ * - Imputes missing values
+ * - Applies log10 transformations
+ * - Removes outliers
+ *
+ * Flow: Raw CSV → preprocess.py → Processed CSV → predict.py → Response
+ *
+ * Returns predictions + processed feature values + preprocessing statistics.
+ */
+app.post('/api/preprocess-and-predict', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'CSV file is required under field name "file".' })
+  }
+
+  const { path: tempPath, originalname, size } = req.file
+  log('preprocess-and-predict start', { originalname, size })
+
+  const processedCsvPath = path.join(os.tmpdir(), `processed_${Date.now()}.csv`)
+
+  try {
+    // Step 1: Preprocess raw CSV (normalization, validation, transforms)
+    const preprocessScript = path.join(__dirname, 'preprocess.py')
+    const preprocessArgs = [
+      preprocessScript,
+      '--input', tempPath,
+      '--output', processedCsvPath
+    ]
+
+    // Run preprocess.py directly (not through PYTHON_SCRIPT wrapper)
+    const preprocessOutput = await new Promise((resolve, reject) => {
+      const proc = spawn('python3', preprocessArgs)
+
+      let stdout = ''
+      let stderr = ''
+
+      proc.stdout.on('data', (chunk) => {
+        stdout += chunk.toString()
+      })
+
+      proc.stderr.on('data', (chunk) => {
+        stderr += chunk.toString()
+      })
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve(stdout)
+        } else {
+          const errorOutput = stdout || stderr || `Preprocessing exited with code ${code}`
+          reject(new Error(errorOutput))
+        }
+      })
+
+      proc.on('error', (err) => {
+        reject(err)
+      })
+    })
+
+    const preprocessResult = JSON.parse(preprocessOutput)
+
+    if (!preprocessResult.success) {
+      log('preprocess-and-predict preprocessing failed', {
+        errors: preprocessResult.errors?.length ?? 0
+      })
+      return res.status(400).json({
+        error: 'CSV preprocessing failed',
+        preprocessing_errors: preprocessResult.errors,
+        warnings: preprocessResult.warnings
+      })
+    }
+
+    log('preprocess-and-predict preprocessing success', {
+      original_rows: preprocessResult.original_rows,
+      processed_rows: preprocessResult.processed_rows,
+      removed_rows: preprocessResult.removed_rows
+    })
+
+    // Step 2: Run predictions on processed CSV
+    const pythonOutput = await runPython(['--mode', 'bulk', '--csv', processedCsvPath])
+    const predictionResult = JSON.parse(pythonOutput)
+
+    if (predictionResult.error) {
+      log('preprocess-and-predict prediction error', { error: predictionResult.error })
+      return res.status(400).json({ error: predictionResult.error })
+    }
+
+    // Step 3: Combine preprocessing stats with predictions
+    const combinedResult = {
+      entries: predictionResult.entries,
+      errors: predictionResult.errors,
+      preprocessing: {
+        original_rows: preprocessResult.original_rows,
+        processed_rows: preprocessResult.processed_rows,
+        removed_rows: preprocessResult.removed_rows,
+        warnings: preprocessResult.warnings || [],
+        errors: preprocessResult.errors || []
+      }
+    }
+
+    log('preprocess-and-predict success', {
+      entries: combinedResult.entries?.length ?? 0,
+      preprocessing_errors: preprocessResult.errors?.length ?? 0,
+      prediction_errors: predictionResult.errors?.length ?? 0
+    })
+
+    return res.json(combinedResult)
+  } catch (error) {
+    log('preprocess-and-predict failure', { error: error.message })
+    return res.status(500).json({ error: 'Failed to process the CSV file.' })
+  } finally {
+    // Clean up both temporary files
+    for (const filePath of [tempPath, processedCsvPath]) {
+      if (filePath) {
+        try {
+          await fs.unlink(filePath)
+        } catch (cleanupError) {
+          log('preprocess-and-predict cleanup error', { error: cleanupError.message, file: filePath })
+        }
       }
     }
   }
