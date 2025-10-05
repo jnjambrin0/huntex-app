@@ -37,9 +37,9 @@ function App() {
       {isHyperspaceActive && <HyperspaceAnimation onComplete={handleHyperspaceComplete} />}
 
       {/* Logo - stays fixed during hyperspace */}
-      <div
-        className="fixed w-64 h-64 mb-2 z-20"
-        style={{ top: '50%', left: '50%', transform: 'translate(-50%, -60%)' }}
+       <div
+        className="fixed w-64 h-64 mb-2 z-50"
+        style={{ top: '40%', left: '50%', transform: isHyperspaceActive ? 'translate(-50%, -40%)' : 'translate(-50%, -60%)' }}
       >
         <img src="/logo.png" alt="HuntEX Logo" className="w-full h-full" />
       </div>
@@ -52,7 +52,7 @@ function App() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative z-[60] flex flex-col items-center gap-4"
+            className="relative flex flex-col items-center gap-4"
           >
             {/* Title */}
             <h1
