@@ -69,6 +69,18 @@ export function ResultsPage() {
   const starsRef = useRef<Star[]>([])
   const canvasContainerRef = useRef<HTMLDivElement>(null)
 
+  // Helper: normaliza el nombre para construir el slug usado por la web de la NASA
+  const makeNasaPath = (name: string) => {
+    if (!name) return ''
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+  }
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -88,23 +100,31 @@ export function ResultsPage() {
     const stars: Star[] = []
     const STAR_COUNT = 300
 
+    // Padding relativo alrededor del área de spawn (10% = 0.10)
+    const PAD = 0.10
+
+    const spawnLeft = canvas.width * PAD
+    const spawnTop = canvas.height * PAD
+    const spawnWidth = canvas.width * (1 - 2 * PAD)
+    const spawnHeight = canvas.height * (1 - 2 * PAD)
+
     // Crear estrellas con variación natural
     for (let i = 0; i < STAR_COUNT; i++) {
-      stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        baseSize: Math.random() * 1.2 + 0.3, // Tamaños muy reducidos (0.3 - 1.5px)
-        baseOpacity: Math.random() * 0.25 + 0.15, // Opacidad muy baja (0.15 - 0.4)
-        pulseOffset: Math.random() * Math.PI * 2,
-        isExoplanet: false,
-        detectionState: 'idle',
-        blinkCount: 0,
-        targetSize: 0,
-        targetOpacity: 0,
-        currentSize: 0,
-        currentOpacity: 0,
-      })
-    }
+    stars.push({
+      x: spawnLeft + Math.random() * spawnWidth,
+      y: spawnTop + Math.random() * spawnHeight,
+      baseSize: Math.random() * 1.2 + 0.3,
+      baseOpacity: Math.random() * 0.25 + 0.15,
+      pulseOffset: Math.random() * Math.PI * 2,
+      isExoplanet: false,
+      detectionState: 'idle',
+      blinkCount: 0,
+      targetSize: 0,
+      targetOpacity: 0,
+      currentSize: 0,
+      currentOpacity: 0,
+    })
+  }
 
     // Inicializar valores actuales
     stars.forEach(star => {
@@ -379,10 +399,27 @@ export function ResultsPage() {
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500 rounded-full mb-6"
+                  className="inline-flex items-center gap-3 px-4 py-2 bg-blue-500/20 border border-blue-500 rounded-full mb-6"
                 >
                   <Globe className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm font-semibold text-blue-400">CONFIRMED EXOPLANET</span>
+                  {selectedExoplanet?.name ? (
+                    (() => {
+                      const path = makeNasaPath(selectedExoplanet.name)
+                      const url = `https://science.nasa.gov/exoplanet-catalog/${path}`
+                      return (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-semibold text-blue-200 hover:text-white px-3 py-1 rounded-md bg-blue-500/10 border border-transparent hover:bg-blue-500/20 transition-colors"
+                        >
+                          Ver en NASA: {selectedExoplanet.name}
+                        </a>
+                      )
+                    })()
+                  ) : (
+                    <span className="text-sm font-semibold text-blue-400">CONFIRMED EXOPLANET</span>
+                  )}
                 </motion.div>
 
                 {/* Datos */}
