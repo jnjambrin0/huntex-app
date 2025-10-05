@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle, XCircle, AlertCircle, Orbit, Globe, Star, Gauge } from 'lucide-react'
 
 interface SingleEntryFormProps {
   onBack: () => void
@@ -103,18 +103,46 @@ export function SingleEntryForm({ onBack, onConfirm }: SingleEntryFormProps) {
     }
   }
 
-  const fields = [
-    { name: 'koi_period', label: 'Orbital Period (days)', placeholder: 'e.g., 2.47' },
-    { name: 'koi_depth', label: 'Transit Depth (ppm)', placeholder: 'e.g., 14284' },
-    { name: 'koi_duration', label: 'Transit Duration (hours)', placeholder: 'e.g., 1.72' },
-    { name: 'koi_prad', label: 'Planet Radius (Earth radii)', placeholder: 'e.g., 14.4' },
-    { name: 'koi_teq', label: 'Equilibrium Temp (K)', placeholder: 'e.g., 1394' },
-    { name: 'koi_insol', label: 'Insolation Flux', placeholder: 'e.g., 0.0' },
-    { name: 'koi_steff', label: 'Stellar Eff Temp (K)', placeholder: 'e.g., 5814' },
-    { name: 'koi_slogg', label: 'Stellar Surface Gravity', placeholder: 'e.g., 4.38' },
-    { name: 'koi_srad', label: 'Stellar Radius (Solar radii)', placeholder: 'e.g., 1.06' },
-    { name: 'koi_model_snr', label: 'Model Signal-to-Noise', placeholder: 'e.g., 7856.1' },
-    { name: 'koi_impact', label: 'Impact Parameter', placeholder: 'e.g., 0.82' },
+  const fieldGroups = [
+    {
+      title: 'Orbital Parameters',
+      icon: Orbit,
+      color: 'blue',
+      fields: [
+        { name: 'koi_period', label: 'Orbital Period (days)', placeholder: 'e.g., 2.47' },
+        { name: 'koi_duration', label: 'Transit Duration (hours)', placeholder: 'e.g., 1.72' },
+        { name: 'koi_impact', label: 'Impact Parameter', placeholder: 'e.g., 0.82' },
+      ]
+    },
+    {
+      title: 'Planetary Properties',
+      icon: Globe,
+      color: 'purple',
+      fields: [
+        { name: 'koi_prad', label: 'Planet Radius (Earth radii)', placeholder: 'e.g., 14.4' },
+        { name: 'koi_teq', label: 'Equilibrium Temp (K)', placeholder: 'e.g., 1394' },
+        { name: 'koi_insol', label: 'Insolation Flux', placeholder: 'e.g., 0.0' },
+      ]
+    },
+    {
+      title: 'Stellar Characteristics',
+      icon: Star,
+      color: 'yellow',
+      fields: [
+        { name: 'koi_steff', label: 'Stellar Eff Temp (K)', placeholder: 'e.g., 5814' },
+        { name: 'koi_slogg', label: 'Stellar Surface Gravity', placeholder: 'e.g., 4.38' },
+        { name: 'koi_srad', label: 'Stellar Radius (Solar radii)', placeholder: 'e.g., 1.06' },
+      ]
+    },
+    {
+      title: 'Signal Metrics',
+      icon: Gauge,
+      color: 'green',
+      fields: [
+        { name: 'koi_depth', label: 'Transit Depth (ppm)', placeholder: 'e.g., 14284' },
+        { name: 'koi_model_snr', label: 'Model Signal-to-Noise', placeholder: 'e.g., 7856.1' },
+      ]
+    },
   ]
 
   return (
@@ -137,30 +165,63 @@ export function SingleEntryForm({ onBack, onConfirm }: SingleEntryFormProps) {
       </h3>
       <p className="text-gray-400 mb-6">Enter exoplanet data for individual analysis</p>
 
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-96 overflow-y-auto pr-2">
-        <div className="grid md:grid-cols-2 gap-4">
-          {fields.map((field) => (
-            <div key={field.name}>
-              <label className="block text-sm text-gray-300 mb-1">{field.label}</label>
-              <input
-                type="text"
-                name={field.name}
-                value={formData[field.name as keyof FormData]}
-                onChange={handleChange}
-                placeholder={field.placeholder}
-                required
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-              />
-            </div>
-          ))}
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-5 max-h-[500px] overflow-y-auto pr-2">
+        {fieldGroups.map((group, groupIndex) => {
+          const IconComponent = group.icon
+          const iconColorClass = {
+            blue: 'text-blue-400',
+            purple: 'text-purple-400',
+            yellow: 'text-yellow-400',
+            green: 'text-green-400',
+          }[group.color]
+
+          const borderColorClass = {
+            blue: 'border-blue-500/30',
+            purple: 'border-purple-500/30',
+            yellow: 'border-yellow-500/30',
+            green: 'border-green-500/30',
+          }[group.color]
+
+          return (
+            <motion.div
+              key={group.title}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: groupIndex * 0.1 }}
+              className={`p-4 bg-slate-800/40 border ${borderColorClass} rounded-xl`}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <IconComponent className={`w-5 h-5 ${iconColorClass}`} />
+                <h4 className="text-sm font-semibold text-gray-300 tracking-wide uppercase">
+                  {group.title}
+                </h4>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                {group.fields.map((field) => (
+                  <div key={field.name} className={group.fields.length === 2 ? 'md:col-span-1' : ''}>
+                    <label className="block text-xs text-gray-400 mb-1.5">{field.label}</label>
+                    <input
+                      type="text"
+                      name={field.name}
+                      value={formData[field.name as keyof FormData]}
+                      onChange={handleChange}
+                      placeholder={field.placeholder}
+                      required
+                      className="w-full px-3 py-2.5 bg-slate-900/60 border border-slate-600 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:bg-slate-900 transition-all hover:border-slate-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )
+        })}
 
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           type="submit"
           disabled={isAnalyzing}
-          className="w-full mt-6 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full mt-6 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold"
         >
           {isAnalyzing ? (
             <>

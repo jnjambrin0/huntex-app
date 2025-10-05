@@ -87,6 +87,8 @@ export function ResultsPage() {
     // Star configuration - sistema de mapa estelar de baja intensidad
     const stars: Star[] = []
     const STAR_COUNT = 300
+    const EXOPLANET_BASE_SIZE = 2.5 // Tamaño base fijo para todos los exoplanetas
+    const MAX_EXOPLANETS = 5 // Límite de exoplanetas para la demo
 
     // Crear estrellas con variación natural
     for (let i = 0; i < STAR_COUNT; i++) {
@@ -124,8 +126,18 @@ export function ResultsPage() {
 
     // Función para detectar un exoplaneta aleatorio
     const detectExoplanet = () => {
-      // Buscar una estrella que no sea ya un exoplaneta
-      const availableStars = stars.filter(s => !s.isExoplanet && s.detectionState === 'idle')
+      // Definir zona segura (10% de margen desde cada borde)
+      const marginX = canvas.width * 0.1
+      const marginY = canvas.height * 0.1
+
+      // Buscar una estrella que no sea ya un exoplaneta Y que esté en zona segura
+      const availableStars = stars.filter(s =>
+        !s.isExoplanet &&
+        s.detectionState === 'idle' &&
+        s.x > marginX && s.x < canvas.width - marginX &&
+        s.y > marginY && s.y < canvas.height - marginY
+      )
+
       if (availableStars.length === 0) return
 
       const randomStar = availableStars[Math.floor(Math.random() * availableStars.length)]
@@ -146,8 +158,8 @@ export function ResultsPage() {
       lastTime = currentTime
       detectionTimer += deltaTime
 
-      // Trigger detección periódica
-      if (detectionTimer >= DETECTION_INTERVAL) {
+      // Trigger detección periódica (solo si no hemos alcanzado el límite)
+      if (detectionTimer >= DETECTION_INTERVAL && detectedCount < MAX_EXOPLANETS) {
         detectExoplanet()
         detectionTimer = 0
       }
@@ -175,7 +187,7 @@ export function ResultsPage() {
           // Después de 2 parpadeos, expandir y brillar
           if (star.blinkCount >= 2) {
             star.detectionState = 'confirmed'
-            star.targetSize = star.baseSize * 4 // Expandir 4x
+            star.targetSize = EXOPLANET_BASE_SIZE // Tamaño fijo para exoplanetas
             star.targetOpacity = 1.0 // Brillo máximo
           } else {
             // Durante parpadeo
@@ -185,7 +197,7 @@ export function ResultsPage() {
         } else if (star.detectionState === 'confirmed') {
           // Exoplaneta confirmado: pulso continuo para indicar interactividad
           const interactivePulse = Math.sin(time * 3) * 0.15 + 1 // Pulso suave continuo
-          star.targetSize = star.baseSize * 4 * interactivePulse
+          star.targetSize = EXOPLANET_BASE_SIZE * interactivePulse // Tamaño fijo con pulso
           star.targetOpacity = 0.9 + (interactivePulse - 1) * 0.5 // Opacidad 0.85 - 0.95
         } else {
           // Estado normal con pulso sutil
@@ -200,25 +212,57 @@ export function ResultsPage() {
 
         // Dibujar estrella
         if (star.detectionState === 'confirmed') {
-          // Exoplaneta confirmado: gradiente azul-púrpura brillante
-          const gradient = ctx.createRadialGradient(
+          // Exoplaneta confirmado: sistema de anillos múltiples para mayor visibilidad
+
+          // Anillo exterior (halo azul-violeta extendido)
+          const outerGradient = ctx.createRadialGradient(
             star.x, star.y, 0,
-            star.x, star.y, star.currentSize * 3
+            star.x, star.y, star.currentSize * 6
           )
-          gradient.addColorStop(0, `rgba(96, 165, 250, ${star.currentOpacity})`) // blue-400
-          gradient.addColorStop(0.4, `rgba(139, 92, 246, ${star.currentOpacity * 0.6})`) // violet-500
-          gradient.addColorStop(1, `rgba(168, 85, 247, 0)`) // purple-500 transparent
+          outerGradient.addColorStop(0, `rgba(96, 165, 250, ${star.currentOpacity * 0.3})`) // blue-400
+          outerGradient.addColorStop(0.3, `rgba(139, 92, 246, ${star.currentOpacity * 0.5})`) // violet-500
+          outerGradient.addColorStop(0.6, `rgba(168, 85, 247, ${star.currentOpacity * 0.3})`) // purple-500
+          outerGradient.addColorStop(1, `rgba(168, 85, 247, 0)`) // purple-500 transparent
 
-          ctx.fillStyle = gradient
+          ctx.fillStyle = outerGradient
           ctx.beginPath()
-          ctx.arc(star.x, star.y, star.currentSize * 3, 0, Math.PI * 2)
+          ctx.arc(star.x, star.y, star.currentSize * 6, 0, Math.PI * 2)
           ctx.fill()
 
-          // Núcleo brillante blanco
-          ctx.fillStyle = `rgba(255, 255, 255, ${star.currentOpacity})`
+          // Anillo medio (resplandor intenso)
+          const midGradient = ctx.createRadialGradient(
+            star.x, star.y, 0,
+            star.x, star.y, star.currentSize * 3.5
+          )
+          midGradient.addColorStop(0, `rgba(147, 197, 253, ${star.currentOpacity * 0.8})`) // blue-300
+          midGradient.addColorStop(0.5, `rgba(139, 92, 246, ${star.currentOpacity * 0.7})`) // violet-500
+          midGradient.addColorStop(1, `rgba(168, 85, 247, 0)`) // purple-500 transparent
+
+          ctx.fillStyle = midGradient
           ctx.beginPath()
-          ctx.arc(star.x, star.y, star.currentSize, 0, Math.PI * 2)
+          ctx.arc(star.x, star.y, star.currentSize * 3.5, 0, Math.PI * 2)
           ctx.fill()
+
+          // Núcleo brillante con gradiente
+          const coreGradient = ctx.createRadialGradient(
+            star.x, star.y, 0,
+            star.x, star.y, star.currentSize * 1.5
+          )
+          coreGradient.addColorStop(0, `rgba(255, 255, 255, ${star.currentOpacity})`)
+          coreGradient.addColorStop(0.6, `rgba(191, 219, 254, ${star.currentOpacity * 0.9})`) // blue-200
+          coreGradient.addColorStop(1, `rgba(96, 165, 250, ${star.currentOpacity * 0.7})`) // blue-400
+
+          ctx.fillStyle = coreGradient
+          ctx.beginPath()
+          ctx.arc(star.x, star.y, star.currentSize * 1.5, 0, Math.PI * 2)
+          ctx.fill()
+
+          // Anillo de definición (stroke sutil para mayor definición)
+          ctx.strokeStyle = `rgba(139, 92, 246, ${star.currentOpacity * 0.4})`
+          ctx.lineWidth = 0.5
+          ctx.beginPath()
+          ctx.arc(star.x, star.y, star.currentSize * 4, 0, Math.PI * 2)
+          ctx.stroke()
         } else {
           // Estrellas normales: blancas sutiles
           ctx.fillStyle = `rgba(255, 255, 255, ${star.currentOpacity})`
@@ -245,7 +289,7 @@ export function ResultsPage() {
           const distance = Math.sqrt(
             Math.pow(mouseX - star.x, 2) + Math.pow(mouseY - star.y, 2)
           )
-          const hitRadius = star.currentSize * 3 // Área de hit más grande que el visual
+          const hitRadius = star.currentSize * 6 // Área de hit coincide con el anillo exterior
 
           if (distance <= hitRadius) {
             foundHover = true
@@ -269,7 +313,7 @@ export function ResultsPage() {
           const distance = Math.sqrt(
             Math.pow(mouseX - star.x, 2) + Math.pow(mouseY - star.y, 2)
           )
-          const hitRadius = star.currentSize * 3
+          const hitRadius = star.currentSize * 6
 
           if (distance <= hitRadius) {
             setSelectedExoplanet(star.exoplanetData)

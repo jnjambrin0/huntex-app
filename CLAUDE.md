@@ -36,12 +36,14 @@ npm run server       # Start Express server (server/index.js)
 
 ```
 src/
-├── App.tsx                          # Main landing page with modal trigger
+├── App.tsx                          # Main landing page + hyperspace orchestration
 ├── components/
-│   ├── AnimatedBackground.tsx       # Canvas-based particle animation
-│   ├── UploadModal.tsx             # Modal container with view routing
-│   ├── BulkUploadForm.tsx          # CSV upload interface
-│   └── SingleEntryForm.tsx         # Manual data entry form
+│   ├── AnimatedBackground.tsx       # Canvas-based particle animation (background stars)
+│   ├── HyperspaceAnimation.tsx      # Canvas-based hyperspace warp effect (4s transition)
+│   ├── UploadModal.tsx              # Modal container with view routing
+│   ├── BulkUploadForm.tsx           # CSV upload interface (optimistic UI)
+│   ├── SingleEntryForm.tsx          # Manual data entry form (optimistic UI)
+│   └── ResultsPage.tsx              # Post-hyperspace destination page
 ├── index.css                        # Tailwind imports + Google Fonts
 └── main.tsx                         # React entry point
 ```
@@ -63,7 +65,48 @@ type ViewType = 'selection' | 'bulk' | 'single'
 const [currentView, setCurrentView] = useState<ViewType>('selection')
 ```
 
-#### 2. API Integration Pattern
+#### 2. Hyperspace Navigation Flow (CRITICAL)
+
+**Complete User Journey:**
+```
+Landing Page → Upload Modal → Form Submit → HYPERSPACE (4s) → Results Page
+```
+
+**State Management** (App.tsx):
+- `isHyperspaceActive`: Controls 4-second warp animation
+- `showResultsPage`: Renders ResultsPage after hyperspace completes
+- Logo remains fixed (z-index 40) during hyperspace transition
+- Title/subtitle fade out before hyperspace begins
+
+**Hyperspace Animation** (HyperspaceAnimation.tsx):
+- 250 stars with 3D perspective projection: `sx = (star.x / star.z) * width + centerX`
+- 3-phase acceleration: ramp-up (1s) → max speed (2s) → deceleration (1s)
+- Canvas-based with `easeInOutCubic` timing function
+- Motion blur via `ctx.fillStyle = 'rgba(0,0,0,0.2)'` overlay
+- Trail/streak effect using `ctx.createLinearGradient()` from previous to current position
+- Star size/opacity proportional to distance: closer = bigger/brighter
+- Triggers `onComplete()` callback after exactly 4000ms
+
+#### 3. Optimistic UI Pattern (CRITICAL)
+
+**Both forms implement immediate transitions** - no result display, no delays:
+
+```typescript
+// BulkUploadForm.tsx & SingleEntryForm.tsx
+const handleSubmit = async () => {
+  onConfirm()  // ← IMMEDIATE hyperspace trigger
+
+  // Backend call continues in background (results logged, not displayed)
+  fetch(API_ENDPOINT, ...).then(...)
+}
+```
+
+**Why this matters:**
+- Zero perceived latency - hyperspace starts instantly on submit
+- Results/errors never shown to user (only console.log for debugging)
+- Creates seamless, cinematic transition experience
+
+#### 4. API Integration Pattern
 
 Both forms use environment variables for flexible backend configuration:
 
@@ -74,6 +117,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000
 **Bulk Upload Endpoint**: `POST /api/bulk-upload`
 - Sends: `FormData` with CSV file
 - Expects: `{ entries: [{row: number, label: string}], errors: [{row: number, message: string}] }`
+- **Note**: Results logged to console, not displayed to user
 
 **Single Prediction Endpoint**: `POST /api/single-predict`
 - Sends: JSON with 11 exoplanet parameters (koi_period, koi_depth, etc.)
@@ -81,8 +125,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000
   - `CONFIRMED` - Green with CheckCircle icon
   - `CANDIDATE` - Yellow with AlertCircle icon
   - `FALSE POSITIVE` - Red with XCircle icon
+- **Note**: Result logged to console, not displayed to user
 
-#### 3. Animation Patterns
+#### 5. Animation Patterns
 
 **Canvas Particle System** (`AnimatedBackground.tsx`):
 - 150 particles rendered on HTML5 canvas
@@ -95,7 +140,25 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000
 - Hover/tap scale transformations on interactive elements
 - `whileHover`, `whileTap`, and `initial/animate/exit` variants throughout
 
-#### 4. Form Validation & Error Handling
+**CRITICAL - Framer Motion Animation Bug**:
+- **Problem**: Cards in UploadModal had visible flicker/jump when appearing
+- **Root Cause**: Conflicting animations between parent container and child elements
+- **Solution**: Remove `motion.div` wrapper from parent, use static `<div>` instead
+- **Rule**: When animating multiple children with delays, DON'T animate the parent container
+
+```tsx
+// ❌ BAD - causes flicker
+<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+  <motion.button initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.3 }} />
+</motion.div>
+
+// ✅ GOOD - smooth animation
+<div>  {/* Static parent */}
+  <motion.button initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.15 }} />
+</div>
+```
+
+#### 6. Form Validation & Error Handling
 
 **Bulk Upload**:
 - Client-side file type validation (CSV only)
@@ -131,6 +194,16 @@ Google Fonts MUST be imported BEFORE Tailwind to avoid PostCSS errors:
 **Tailwind v4 Setup**:
 Uses the new `@tailwindcss/vite` plugin instead of PostCSS configuration.
 
+**Z-Index Stacking Order** (CRITICAL for hyperspace):
+```
+z-0:  AnimatedBackground (background stars)
+z-10: Title/subtitle text (fades out before hyperspace)
+z-30: HyperspaceAnimation canvas (warp effect)
+z-40: Logo (remains visible during hyperspace)
+z-50: UploadModal (above everything)
+```
+This order ensures logo stays visible during hyperspace while other elements fade.
+
 ### Environment Variables
 
 Create `.env` file for custom backend URL:
@@ -154,18 +227,10 @@ Defaults to `http://localhost:8000` if not set.
 
 The app was built using iterative Playwright validation. Key validation points:
 - Landing page renders logo, title, subtitle, and button correctly
-- Modal opens/closes smoothly with animations
-- Both forms display and handle submissions properly
-- Error states render appropriately
-
-### Future Enhancement Considerations
-
-- Add loading states during backend calls
-- Implement result export functionality (CSV download)
-- Add form field tooltips with parameter descriptions
-- Persist upload history in localStorage
-- Add dark/light theme toggle
-- Implement batch result visualization (charts/graphs)
+- Modal opens/closes smoothly without animation flickers
+- Both forms submit and trigger hyperspace immediately (optimistic UI)
+- Hyperspace animation runs for exactly 4 seconds
+- Results page appears after hyperspace completes
 
 ## Backend Requirements
 
