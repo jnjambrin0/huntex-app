@@ -1,0 +1,86 @@
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatedBackground } from './components/AnimatedBackground'
+import { UploadModal } from './components/UploadModal'
+import { HyperspaceAnimation } from './components/HyperspaceAnimation'
+import { ResultsPage } from './components/ResultsPage'
+
+function App() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isHyperspaceActive, setIsHyperspaceActive] = useState(false)
+  const [showResultsPage, setShowResultsPage] = useState(false)
+
+  const handleDataConfirmed = () => {
+    setIsModalOpen(false)
+    setIsHyperspaceActive(true)
+  }
+
+  const handleHyperspaceComplete = () => {
+    setIsHyperspaceActive(false)
+    setShowResultsPage(true)
+  }
+
+  // Show results page after hyperspace
+  if (showResultsPage) {
+    return <ResultsPage />
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950" />
+
+      {/* Animated Particles */}
+      <AnimatedBackground />
+
+      {/* Hyperspace Animation */}
+      {isHyperspaceActive && <HyperspaceAnimation onComplete={handleHyperspaceComplete} />}
+
+      {/* Logo - stays fixed during hyperspace */}
+      <div className="fixed w-64 h-64 mb-2 z-40" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -60%)' }}>
+        <img src="/logo.png" alt="HuntEX Logo" className="w-full h-full" />
+      </div>
+
+      {/* Content */}
+      <AnimatePresence>
+        {!isHyperspaceActive && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 flex flex-col items-center gap-4"
+          >
+            {/* Title */}
+            <h1 className="text-7xl text-white tracking-[0.2em] mt-72 border-gray-700" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+              HUNTEX
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-lg text-gray-300 font-light -mt-2 pt-5">
+              your hunt starts here
+            </p>
+
+            {/* Button - only show if modal not confirmed yet */}
+            {!isHyperspaceActive && !showResultsPage && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="mt-7 cursor-pointer px-12 py-3.5 border-[3px] border-white text-white text-sm font-semibold tracking-widest rounded-[2rem] hover:bg-white hover:text-slate-900 transition-all duration-300"
+              >
+                UPLOAD DATA
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleDataConfirmed}
+      />
+    </div>
+  )
+}
+
+export default App

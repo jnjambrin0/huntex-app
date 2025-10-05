@@ -1,0 +1,18 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- White circle (full) -->
+  <circle cx="100" cy="100" r="55" fill="white"/>
+
+  <!-- Black half circle (left side) -->
+  <path d="M 100 45 A 55 55 0 0 0 100 155 Z" fill="black"/>
+
+  <!-- Circle outline (thicker) -->
+  <circle cx="100" cy="100" r="55" fill="none" stroke="white" stroke-width="3"/>
+
+  <!-- Diagonal line with needle tip -->
+  <defs>
+    <marker id="needle-tip" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="white"/>
+    </marker>
+  </defs>
+  <line x1="45" y1="155" x2="155" y2="45" stroke="white" stroke-width="7" marker-end="url(#needle-tip)"/>
+</svg>
