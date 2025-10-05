@@ -59,9 +59,11 @@ CSV file upload for batch analysis:
 - **Lucide React** - Beautiful icons
 - **HTML5 Canvas** - Custom star field & animations
 
-### Backend (Not included in this repo)
-- **FastAPI** (Python) - ML model inference
-- REST API endpoints for predictions
+### Backend
+- **Express.js** - API server with CORS support
+- **Python 3** - ML model inference via subprocess
+- **Multer** - CSV file upload handling
+- **Joblib** - ML model serialization
 
 ## 🚀 Getting Started
 
@@ -73,7 +75,7 @@ CSV file upload for batch analysis:
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/jnjambrin0/huntex-app
 cd HuntEX-front/huntex-app
 
 # Install dependencies
@@ -110,9 +112,13 @@ huntex-app/
 │   ├── App.tsx                       # Main app logic
 │   ├── main.tsx                      # React entry point
 │   └── index.css                     # Tailwind imports
+├── server/
+│   ├── index.js                      # Express API server
+│   └── predict.py                    # ML prediction script
 ├── public/
 │   └── logo.png                      # HuntEX logo
 ├── docs/                             # Screenshots
+├── model.joblib                      # Trained ML model
 └── package.json
 ```
 
@@ -168,6 +174,34 @@ huntex-app/
 - **POST** `/api/bulk-upload` - CSV batch processing
 - Optimistic UI pattern (immediate transitions, background API calls)
 
+## 🖥️ Server Architecture
+
+The backend lives in `server/` and consists of two components:
+
+### Express API Server (`server/index.js`)
+- **Port**: 8000 (configurable via `PORT` env var)
+- **CORS**: Enabled for all origins (`*`)
+- **File uploads**: Handled by Multer with 100MB limit
+- **Logging**: Structured JSON logs to stdout
+- **Error handling**: Graceful error responses with cleanup
+
+**Endpoints:**
+- `POST /api/single-predict` - Accepts JSON with 11 exoplanet parameters
+- `POST /api/bulk-upload` - Accepts CSV file via multipart form data
+
+### Python Prediction Script (`server/predict.py`)
+- **Model**: Loads `model.joblib` (scikit-learn model bundle)
+- **Modes**:
+  - `single` - Predicts one data point from JSON
+  - `bulk` - Predicts all rows from CSV file
+- **Output**: JSON with predictions (`CONFIRMED`, `CANDIDATE`, `FALSE POSITIVE`)
+- **Validation**: Checks for missing features and invalid data types
+
+**Running the server:**
+```bash
+npm run server  # Starts Express on port 8000
+```
+
 ## 👥 Team
 
 Built with ❤️ for the NASA Space Apps Challenge by our amazing hackathon team.
@@ -183,10 +217,3 @@ This is a hackathon project built for educational purposes.
 - **React** and **Vite** communities for excellent tools
 
 ---
-
-**Your hunt starts here.** 🔭✨
-
-0-Angers repository for NASA SpaceApps Challenge in Málaga Local Event.
-Important files:
-  -Team photo.
-  -Model canvas.
