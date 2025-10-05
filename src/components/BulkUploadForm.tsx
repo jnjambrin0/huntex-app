@@ -17,6 +17,7 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
   const [results, setResults] = useState<{ row: number; label: string }[]>([])
   const [rowErrors, setRowErrors] = useState<{ row: number; message: string }[]>([])
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [demoMode, setDemoMode] = useState(false)
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -57,6 +58,14 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
   }
 
   const handleUpload = async () => {
+    // Demo mode: skip file validation and trigger hyperspace immediately
+    if (demoMode) {
+      setIsUploading(true)
+      onConfirm?.()
+      return
+    }
+
+    // Normal mode: require file
     if (!file) return
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -116,6 +125,30 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
       </h3>
       <p className="text-gray-400 mb-6">Upload a CSV file for batch exoplanet analysis</p>
 
+      {/* Demo Mode Checkbox */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg"
+      >
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={demoMode}
+            onChange={(e) => setDemoMode(e.target.checked)}
+            className="w-5 h-5 rounded border-2 border-blue-500 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 cursor-pointer transition-all"
+          />
+          <div className="flex-1">
+            <p className="text-white font-semibold group-hover:text-blue-300 transition-colors">
+              Demo Mode
+            </p>
+            <p className="text-sm text-gray-400">
+              Don't have a dataset? Enable demo mode to see the system in action with sample data
+            </p>
+          </div>
+        </label>
+      </motion.div>
+
       <div
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -173,35 +206,37 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
         </motion.p>
       )}
 
-      {file && (
+      {(file || demoMode) && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-6 flex gap-4"
         >
-          <button
-            onClick={() => {
-              setFile(null)
-              setResults([])
-              setRowErrors([])
-              setUploadError(null)
-            }}
-            className="flex-1 px-6 py-3 border-2 border-slate-600 text-white rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            Clear
-          </button>
+          {file && !demoMode && (
+            <button
+              onClick={() => {
+                setFile(null)
+                setResults([])
+                setRowErrors([])
+                setUploadError(null)
+              }}
+              className="flex-1 px-6 py-3 border-2 border-slate-600 text-white rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              Clear
+            </button>
+          )}
           <button
             onClick={handleUpload}
             disabled={isUploading}
-            className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className={`${file && !demoMode ? 'flex-1' : 'w-full'} px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
           >
             {isUploading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Uploading...
+                {demoMode ? 'Launching Demo...' : 'Uploading...'}
               </>
             ) : (
-              'Upload & Analyze'
+              demoMode ? 'Start Demo Analysis' : 'Upload & Analyze'
             )}
           </button>
         </motion.div>
