@@ -1,0 +1,55 @@
+{
+  "dataset_shape": [
+    60147,
+    49
+  ],
+  "total_samples": 60147,
+  "missing_values": {
+    "koi_depth": {
+      "count": 10675,
+      "percentage": 17.748183616805495
+    },
+    "koi_duration": {
+      "count": 9565,
+      "percentage": 15.902705039320331
+    },
+    "koi_prad": {
+      "count": 11269,
+      "percentage": 18.735764044757012
+    },
+    "koi_teq": {
+      "count": 11289,
+      "percentage": 18.769015911018005
+    },
+    "koi_insol": {
+      "count": 16810,
+      "percentage": 27.94819359236537
+    },
+    "koi_steff": {
+      "count": 10675,
+      "percentage": 17.748183616805495
+    },
+    "koi_slogg": {
+      "count": 10675,
+      "percentage": 17.748183616805495
+    },
+    "koi_srad": {
+      "count": 11269,
+      "percentage": 18.735764044757012
+    },
+    "koi_score": {
+      "count": 35985,
+      "percentage": 59.82842037009327
+    },
+    "koi_model_snr": {
+      "count": 10675,
+      "percentage": 17.748183616805495
+    },
+    "koi_impact": {
+      "count": 11289,
+      "percentage": 18.769015911018005
+    }
+  },
+  "duplicate_kois": 9564,
+  "leakage_detected": true
+}
