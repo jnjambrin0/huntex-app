@@ -4,7 +4,7 @@
 
 An interactive web application that visualizes exoplanet detection using machine learning predictions. Upload your data and watch the universe reveal its secrets through a stunning space-themed interface.
 
-![HuntEX Landing Page](huntex-app/docs/landing-page.png)
+![HuntEX Landing Page](docs/landing-page.png)
 
 ## 🎯 What is HuntEX?
 
