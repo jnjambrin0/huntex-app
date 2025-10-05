@@ -10,6 +10,48 @@ An interactive web application that visualizes exoplanet detection using machine
 
 HuntEX is a web-based exoplanet detection visualization tool that combines machine learning predictions with an engaging UI/UX experience. The app simulates the detection of exoplanets in real-time, presenting them on an interactive star map where users can explore detailed planetary data.
 
+## 🤖 The Core: Our ML Model
+
+**The heart of this project is our custom-trained Random Forest classifier** that analyzes real Kepler telescope data to identify exoplanets. This was the primary goal of our NASA Space Apps Challenge submission.
+
+### 🏆 Model Highlights
+- **~85% accuracy** on exoplanet classification
+- **12 orbital & stellar features** used for prediction
+- **3-class classification**: CONFIRMED, CANDIDATE, FALSE POSITIVE
+- **Random Forest ensemble** with 200 decision trees
+- **Balanced training** with SMOTE for handling class imbalance
+- **Real Kepler data** from NASA's KOI catalog (~9,500 entries)
+
+### 📂 Model Repository
+
+The complete ML pipeline lives in the **[`Improved-RF/`](./Improved-RF)** directory:
+
+```
+📊 Kepler Data (9,500 KOIs)
+    ↓
+🔧 Preprocessing (data.py)
+    ↓
+🤖 Random Forest Training (main.py)
+    ↓
+📈 Evaluation & Metrics (evaluate.py)
+    ↓
+💾 model.joblib (Production Model)
+    ↓
+🌐 Web App Integration
+```
+
+**What's inside:**
+- Full training & evaluation code
+- Data preprocessing pipeline
+- Hyperparameter tuning experiments
+- Feature importance analysis
+- Confusion matrix & performance metrics
+- **Comprehensive documentation** in [`Improved-RF/README.md`](./Improved-RF/README.md)
+
+**👉 [View the ML Model Documentation](./Improved-RF/README.md)** for technical details, training instructions, and model architecture.
+
+This web application serves as the **visualization layer** for our ML model, making exoplanet detection accessible and engaging for everyone.
+
 ## ✨ Features
 
 ### 🎨 Beautiful UI/UX
@@ -101,7 +143,7 @@ If not set, defaults to `http://localhost:8000`.
 
 ```
 huntex-app/
-├── src/
+├── src/                              # Frontend React application
 │   ├── components/
 │   │   ├── AnimatedBackground.tsx    # Particle background
 │   │   ├── HyperspaceAnimation.tsx   # Warp speed effect
@@ -109,16 +151,33 @@ huntex-app/
 │   │   ├── SingleEntryForm.tsx       # Manual data entry
 │   │   ├── BulkUploadForm.tsx        # CSV upload
 │   │   └── ResultsPage.tsx           # Star map & detections
+│   ├── types/
+│   │   └── exoplanet.ts              # TypeScript interfaces
 │   ├── App.tsx                       # Main app logic
 │   ├── main.tsx                      # React entry point
 │   └── index.css                     # Tailwind imports
-├── server/
+├── server/                           # Backend API
 │   ├── index.js                      # Express API server
-│   └── predict.py                    # ML prediction script
+│   ├── predict.py                    # ML prediction script
+│   ├── preprocess.py                 # CSV preprocessing pipeline
+│   └── training_stats.json           # Training set statistics
+├── Improved-RF/                      # 🤖 ML MODEL (Core of the project)
+│   ├── main.py                       # Training entry point
+│   ├── model.py                      # Random Forest wrapper
+│   ├── data.py                       # Data preprocessing
+│   ├── train.py                      # Training pipeline
+│   ├── evaluate.py                   # Metrics & visualization
+│   ├── config.py                     # Configuration system
+│   ├── results/                      # Model outputs & plots
+│   ├── examples/                     # Sample datasets
+│   ├── tools/                        # Utilities
+│   ├── GAN/                          # Experimental data augmentation
+│   └── README.md                     # 📖 Full ML documentation
 ├── public/
 │   └── logo.png                      # HuntEX logo
-├── docs/                             # Screenshots
-├── model.joblib                      # Trained ML model
+├── docs/                             # Screenshots & documentation
+├── model.joblib                      # Trained ML model (production)
+├── CLAUDE.md                         # Developer instructions
 └── package.json
 ```
 
@@ -201,6 +260,38 @@ The backend lives in `server/` and consists of two components:
 ```bash
 npm run server  # Starts Express on port 8000
 ```
+
+## 🔄 Complete ML Pipeline: From Training to Visualization
+
+Our project showcases the full data science workflow:
+
+### 1️⃣ Model Training (`Improved-RF/`)
+```bash
+cd Improved-RF
+python main.py
+```
+- Loads raw Kepler KOI catalog data
+- Preprocesses features (normalization, log transforms, imputation)
+- Trains Random Forest classifier with cross-validation
+- Evaluates performance (accuracy, F1, confusion matrix)
+- Saves trained model to `model.joblib`
+
+### 2️⃣ Backend Integration (`server/`)
+- Express server loads the trained model
+- Accepts user data via REST API
+- Preprocesses input (same pipeline as training)
+- Runs inference using `predict.py`
+- Returns classification: CONFIRMED, CANDIDATE, or FALSE POSITIVE
+
+### 3️⃣ Frontend Visualization (`src/`)
+- React app sends exoplanet data to backend
+- Receives ML predictions in real-time
+- Filters to show only CONFIRMED and CANDIDATE detections
+- Animates results on interactive star map
+- Displays detailed planetary parameters with scientific units
+
+### 🎯 The Result
+A complete end-to-end system from raw astronomical data → machine learning → interactive visualization, making exoplanet science accessible to everyone.
 
 ## 👥 Team
 
