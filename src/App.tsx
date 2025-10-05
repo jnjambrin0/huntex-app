@@ -4,15 +4,21 @@ import { AnimatedBackground } from './components/AnimatedBackground'
 import { UploadModal } from './components/UploadModal'
 import { HyperspaceAnimation } from './components/HyperspaceAnimation'
 import { ResultsPage } from './components/ResultsPage'
+import type { ExoplanetResult } from './types/exoplanet'
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isHyperspaceActive, setIsHyperspaceActive] = useState(false)
   const [showResultsPage, setShowResultsPage] = useState(false)
+  const [backendResults, setBackendResults] = useState<ExoplanetResult[]>([])
 
   const handleDataConfirmed = () => {
     setIsModalOpen(false)
     setIsHyperspaceActive(true)
+  }
+
+  const handleResultsReceived = (results: ExoplanetResult[]) => {
+    setBackendResults(results)
   }
 
   const handleHyperspaceComplete = () => {
@@ -22,7 +28,7 @@ function App() {
 
   // Show results page after hyperspace
   if (showResultsPage) {
-    return <ResultsPage />
+    return <ResultsPage results={backendResults} />
   }
 
   return (
@@ -89,6 +95,7 @@ function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleDataConfirmed}
+        onResultsReceived={handleResultsReceived}
       />
     </div>
   )

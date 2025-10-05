@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Upload, FileText, ArrowLeft, Loader2 } from 'lucide-react'
+import type { ExoplanetResult } from '../types/exoplanet'
 
 interface BulkUploadFormProps {
   onBack: () => void
   onConfirm?: () => void
+  onResultsReceived?: (results: ExoplanetResult[]) => void
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024
 
-export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
+export function BulkUploadForm({ onBack, onConfirm, onResultsReceived }: BulkUploadFormProps) {
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -62,6 +64,64 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
     if (demoMode) {
       setIsUploading(true)
       onConfirm?.()
+
+      // Generate demo data for testing
+      const demoResults: ExoplanetResult[] = [
+        {
+          row: 0,
+          label: 'CONFIRMED',
+          koi_period: 2.47,
+          koi_depth: 14284,
+          koi_duration: 1.72,
+          koi_prad: 14.4,
+          koi_teq: 1394,
+          koi_insol: 0.0,
+          koi_steff: 5814,
+          koi_slogg: 4.38,
+          koi_srad: 1.06,
+          koi_model_snr: 7856.1,
+          koi_impact: 0.82,
+          name: 'Kepler-442b',
+          discoveryDate: new Date().toLocaleDateString()
+        },
+        {
+          row: 1,
+          label: 'CANDIDATE',
+          koi_period: 365.25,
+          koi_depth: 8420,
+          koi_duration: 3.2,
+          koi_prad: 2.1,
+          koi_teq: 280,
+          koi_insol: 1.0,
+          koi_steff: 5778,
+          koi_slogg: 4.44,
+          koi_srad: 1.0,
+          koi_model_snr: 542.3,
+          koi_impact: 0.45,
+          name: 'TRAPPIST-1e',
+          discoveryDate: new Date().toLocaleDateString()
+        },
+        {
+          row: 2,
+          label: 'CONFIRMED',
+          koi_period: 11.2,
+          koi_depth: 19200,
+          koi_duration: 2.8,
+          koi_prad: 11.2,
+          koi_teq: 800,
+          koi_insol: 50.2,
+          koi_steff: 6100,
+          koi_slogg: 4.2,
+          koi_srad: 1.8,
+          koi_model_snr: 9200.5,
+          koi_impact: 0.12,
+          name: 'HD 209458b',
+          discoveryDate: new Date().toLocaleDateString()
+        }
+      ]
+
+      onResultsReceived?.(demoResults)
+      setIsUploading(false)
       return
     }
 
@@ -81,7 +141,7 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
     // Optimistic transition: trigger hyperspace immediately
     onConfirm?.()
 
-    // Background upload (results won't be shown, but logged for debugging)
+    // Background upload - transform backend response to ExoplanetResult[]
     const formData = new FormData()
     formData.append('file', file)
 
@@ -95,11 +155,34 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
 
       if (!response.ok) {
         console.error('Upload failed:', data?.error ?? 'Upload failed')
+        onResultsReceived?.([]) // Send empty array on error
       } else {
         console.log('Upload successful:', data)
+
+        // Transform backend response to ExoplanetResult[]
+        const transformedResults: ExoplanetResult[] = data.entries?.map((entry: any) => ({
+          row: entry.row,
+          label: entry.label as 'CONFIRMED' | 'CANDIDATE' | 'FALSE POSITIVE',
+          koi_period: entry.koi_period,
+          koi_depth: entry.koi_depth,
+          koi_duration: entry.koi_duration,
+          koi_prad: entry.koi_prad,
+          koi_teq: entry.koi_teq,
+          koi_insol: entry.koi_insol,
+          koi_steff: entry.koi_steff,
+          koi_slogg: entry.koi_slogg,
+          koi_srad: entry.koi_srad,
+          koi_model_snr: entry.koi_model_snr,
+          koi_impact: entry.koi_impact,
+          name: entry.name,
+          discoveryDate: new Date().toLocaleDateString()
+        })) ?? []
+
+        onResultsReceived?.(transformedResults)
       }
     } catch (error) {
       console.error('Upload error:', error)
+      onResultsReceived?.([]) // Send empty array on error
     } finally {
       setIsUploading(false)
     }

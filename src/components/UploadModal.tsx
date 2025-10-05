@@ -3,11 +3,13 @@ import { motion, AnimatePresence, useAnimation, type Variants } from 'framer-mot
 import { Upload, FileText, X } from 'lucide-react'
 import { BulkUploadForm } from './BulkUploadForm'
 import { SingleEntryForm } from './SingleEntryForm'
+import type { ExoplanetResult } from '../types/exoplanet'
 
 interface UploadModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
+  onResultsReceived: (results: ExoplanetResult[]) => void
 }
 
 type ViewType = 'selection' | 'bulk' | 'single'
@@ -157,7 +159,7 @@ function SelectionView({ onBulk, onSingle }: SelectionViewProps) {
   )
 }
 
-export function UploadModal({ isOpen, onClose, onConfirm }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, onConfirm, onResultsReceived }: UploadModalProps) {
   const [currentView, setCurrentView] = useState<ViewType>('selection')
 
   const handleClose = () => {
@@ -219,11 +221,21 @@ export function UploadModal({ isOpen, onClose, onConfirm }: UploadModalProps) {
                 )}
 
                 {currentView === 'bulk' && (
-                  <BulkUploadForm key="bulk" onBack={handleBack} onConfirm={handleConfirm} />
+                  <BulkUploadForm
+                    key="bulk"
+                    onBack={handleBack}
+                    onConfirm={handleConfirm}
+                    onResultsReceived={onResultsReceived}
+                  />
                 )}
 
                 {currentView === 'single' && (
-                  <SingleEntryForm key="single" onBack={handleBack} onConfirm={handleConfirm} />
+                  <SingleEntryForm
+                    key="single"
+                    onBack={handleBack}
+                    onConfirm={handleConfirm}
+                    onResultsReceived={onResultsReceived}
+                  />
                 )}
               </AnimatePresence>
             </div>

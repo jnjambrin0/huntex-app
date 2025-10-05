@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2, CheckCircle, XCircle, AlertCircle, Orbit, Globe, Star, Gauge } from 'lucide-react'
+import type { ExoplanetResult } from '../types/exoplanet'
 
 interface SingleEntryFormProps {
   onBack: () => void
   onConfirm?: () => void
+  onResultsReceived?: (results: ExoplanetResult[]) => void
 }
 
 interface FormData {
@@ -44,7 +46,7 @@ const labelStyles = {
   },
 } as const
 
-export function SingleEntryForm({ onBack, onConfirm }: SingleEntryFormProps) {
+export function SingleEntryForm({ onBack, onConfirm, onResultsReceived }: SingleEntryFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -79,7 +81,7 @@ export function SingleEntryForm({ onBack, onConfirm }: SingleEntryFormProps) {
     // Optimistic transition: trigger hyperspace immediately
     onConfirm?.()
 
-    // Background analysis (results won't be shown, but logged for debugging)
+    // Background analysis - transform backend response to ExoplanetResult[]
     try {
       const response = await fetch(`${API_BASE_URL}/api/single-predict`, {
         method: 'POST',
@@ -93,11 +95,33 @@ export function SingleEntryForm({ onBack, onConfirm }: SingleEntryFormProps) {
 
       if (!response.ok) {
         console.error('Analysis failed:', data?.error ?? 'Analysis failed')
+        onResultsReceived?.([]) // Send empty array on error
       } else {
         console.log('Analysis successful:', data)
+
+        // Transform single result to ExoplanetResult array
+        const singleResult: ExoplanetResult = {
+          label: data.label as 'CONFIRMED' | 'CANDIDATE' | 'FALSE POSITIVE',
+          koi_period: parseFloat(formData.koi_period),
+          koi_depth: parseFloat(formData.koi_depth),
+          koi_duration: parseFloat(formData.koi_duration),
+          koi_prad: parseFloat(formData.koi_prad),
+          koi_teq: parseFloat(formData.koi_teq),
+          koi_insol: parseFloat(formData.koi_insol),
+          koi_steff: parseFloat(formData.koi_steff),
+          koi_slogg: parseFloat(formData.koi_slogg),
+          koi_srad: parseFloat(formData.koi_srad),
+          koi_model_snr: parseFloat(formData.koi_model_snr),
+          koi_impact: parseFloat(formData.koi_impact),
+          name: data.name ?? `KOI-${Date.now()}`,
+          discoveryDate: new Date().toLocaleDateString()
+        }
+
+        onResultsReceived?.([ singleResult ]) // Wrap in array
       }
     } catch (error) {
       console.error('Analysis error:', error)
+      onResultsReceived?.([]) // Send empty array on error
     } finally {
       setIsAnalyzing(false)
     }

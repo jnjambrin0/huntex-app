@@ -1,22 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Globe, Thermometer, Orbit, Star as StarIcon, Gauge, Radar } from 'lucide-react'
+import type { ExoplanetResult } from '../types/exoplanet'
 
-interface ExoplanetData {
+interface ExoplanetData extends ExoplanetResult {
   id: number
-  name: string
-  koi_period: number
-  koi_depth: number
-  koi_duration: number
-  koi_prad: number
-  koi_teq: number
-  koi_insol: number
-  koi_steff: number
-  koi_slogg: number
-  koi_srad: number
-  koi_model_snr: number
-  koi_impact: number
-  discoveryDate: string
 }
 
 interface Star {
@@ -35,33 +23,11 @@ interface Star {
   exoplanetData?: ExoplanetData
 }
 
-// Función para generar datos aleatorios de exoplanetas
-const generateExoplanetData = (id: number): ExoplanetData => {
-  const names = [
-    'Kepler-442b', 'HD 209458b', 'TRAPPIST-1e', 'Proxima Centauri b',
-    'K2-18b', 'TOI-700d', 'LHS 1140b', 'GJ 1214b', 'WASP-121b', 'HAT-P-7b',
-    '55 Cancri e', 'CoRoT-7b', 'Gliese 876d', 'HD 189733b', 'TrES-2b'
-  ]
-
-  return {
-    id,
-    name: names[id % names.length] || `KOI-${1000 + id}`,
-    koi_period: Math.random() * 400 + 0.5,
-    koi_depth: Math.random() * 20000 + 100,
-    koi_duration: Math.random() * 10 + 0.5,
-    koi_prad: Math.random() * 20 + 0.5,
-    koi_teq: Math.random() * 2000 + 200,
-    koi_insol: Math.random() * 1000,
-    koi_steff: Math.random() * 5000 + 3000,
-    koi_slogg: Math.random() * 2 + 3,
-    koi_srad: Math.random() * 3 + 0.5,
-    koi_model_snr: Math.random() * 10000 + 100,
-    koi_impact: Math.random() * 1.5,
-    discoveryDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toLocaleDateString()
-  }
+interface ResultsPageProps {
+  results: ExoplanetResult[]
 }
 
-export function ResultsPage() {
+export function ResultsPage({ results }: ResultsPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [detectedCount, setDetectedCount] = useState(0)
   const [selectedExoplanet, setSelectedExoplanet] = useState<ExoplanetData | null>(null)
@@ -100,7 +66,6 @@ export function ResultsPage() {
     const stars: Star[] = []
     const STAR_COUNT = 300
     const EXOPLANET_BASE_SIZE = 2.5 // Tamaño base fijo para todos los exoplanetas
-    const MAX_EXOPLANETS = 5 // Límite de exoplanetas para la demo
 
     // Padding relativo alrededor del área de spawn (10% = 0.10)
     const PAD = 0.10
@@ -112,21 +77,21 @@ export function ResultsPage() {
 
     // Crear estrellas con variación natural
     for (let i = 0; i < STAR_COUNT; i++) {
-    stars.push({
-      x: spawnLeft + Math.random() * spawnWidth,
-      y: spawnTop + Math.random() * spawnHeight,
-      baseSize: Math.random() * 1.2 + 0.3,
-      baseOpacity: Math.random() * 0.25 + 0.15,
-      pulseOffset: Math.random() * Math.PI * 2,
-      isExoplanet: false,
-      detectionState: 'idle',
-      blinkCount: 0,
-      targetSize: 0,
-      targetOpacity: 0,
-      currentSize: 0,
-      currentOpacity: 0,
-    })
-  }
+      stars.push({
+        x: spawnLeft + Math.random() * spawnWidth,
+        y: spawnTop + Math.random() * spawnHeight,
+        baseSize: Math.random() * 1.2 + 0.3,
+        baseOpacity: Math.random() * 0.25 + 0.15,
+        pulseOffset: Math.random() * Math.PI * 2,
+        isExoplanet: false,
+        detectionState: 'idle',
+        blinkCount: 0,
+        targetSize: 0,
+        targetOpacity: 0,
+        currentSize: 0,
+        currentOpacity: 0,
+      })
+    }
 
     // Inicializar valores actuales
     stars.forEach(star => {
@@ -140,50 +105,9 @@ export function ResultsPage() {
     starsRef.current = stars
 
     let animationFrameId: number
-    let lastTime = 0
-    let detectionTimer = 0
-    const DETECTION_INTERVAL = 4000 // Detectar exoplaneta cada 4 segundos
-
-    // Función para detectar un exoplaneta aleatorio
-    const detectExoplanet = () => {
-      // Definir zona segura (10% de margen desde cada borde)
-      const marginX = canvas.width * 0.1
-      const marginY = canvas.height * 0.1
-
-      // Buscar una estrella que no sea ya un exoplaneta Y que esté en zona segura
-      const availableStars = stars.filter(s =>
-        !s.isExoplanet &&
-        s.detectionState === 'idle' &&
-        s.x > marginX && s.x < canvas.width - marginX &&
-        s.y > marginY && s.y < canvas.height - marginY
-      )
-
-      if (availableStars.length === 0) return
-
-      const randomStar = availableStars[Math.floor(Math.random() * availableStars.length)]
-      randomStar.detectionState = 'blinking'
-      randomStar.blinkCount = 0
-      randomStar.isExoplanet = true
-
-      // Generar datos del exoplaneta
-      const exoplanetId = detectedCount
-      randomStar.exoplanetData = generateExoplanetData(exoplanetId)
-
-      setDetectedCount(prev => prev + 1)
-    }
 
     // Animation loop
     const animate = (currentTime: number) => {
-      const deltaTime = currentTime - lastTime
-      lastTime = currentTime
-      detectionTimer += deltaTime
-
-      // Trigger detección periódica (solo si no hemos alcanzado el límite)
-      if (detectionTimer >= DETECTION_INTERVAL && detectedCount < MAX_EXOPLANETS) {
-        detectExoplanet()
-        detectionTimer = 0
-      }
-
       // Limpiar canvas
       ctx.fillStyle = 'rgba(2, 6, 23, 1)' // slate-950
       ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -352,6 +276,61 @@ export function ResultsPage() {
       cancelAnimationFrame(animationFrameId)
     }
   }, [])
+
+  // Progressive revelation effect - reveals exoplanets one by one with exactly 1000ms delay
+  useEffect(() => {
+    if (!results || results.length === 0) return
+
+    const timeouts: ReturnType<typeof setTimeout>[] = []
+
+    // Function to reveal a single exoplanet
+    const revealExoplanet = (result: ExoplanetResult, index: number) => {
+      const stars = starsRef.current
+      if (!stars || stars.length === 0) return
+
+      // Find available star in safe zone
+      const availableStars = stars.filter(s =>
+        !s.isExoplanet &&
+        s.detectionState === 'idle'
+      )
+
+      if (availableStars.length === 0) {
+        console.warn('No available stars to reveal exoplanet')
+        return
+      }
+
+      // Select random available star
+      const randomStar = availableStars[Math.floor(Math.random() * availableStars.length)]
+
+      // Configure star for exoplanet detection
+      randomStar.detectionState = 'blinking'
+      randomStar.blinkCount = 0
+      randomStar.isExoplanet = true
+
+      // Assign real backend data to the star
+      randomStar.exoplanetData = {
+        ...result,
+        id: index
+      }
+
+      // Update detected count
+      setDetectedCount(index + 1)
+    }
+
+    // Schedule progressive revelation: 1 exoplanet every 1000ms
+    results.forEach((result, index) => {
+      const timeout = setTimeout(() => {
+        revealExoplanet(result, index)
+      }, index * 1000) // 0ms, 1000ms, 2000ms, 3000ms...
+
+      timeouts.push(timeout)
+    })
+
+    // Cleanup timeouts on unmount or results change
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout))
+    }
+  }, [results])
 
   return (
     <motion.div

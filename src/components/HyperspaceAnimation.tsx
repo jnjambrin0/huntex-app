@@ -13,6 +13,12 @@ interface HyperspaceAnimationProps {
 
 export function HyperspaceAnimation({ onComplete }: HyperspaceAnimationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const onCompleteRef = useRef(onComplete)
+
+  // Keep onComplete ref up to date without triggering re-renders
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -136,8 +142,8 @@ export function HyperspaceAnimation({ onComplete }: HyperspaceAnimationProps) {
       if (progress < 1) {
         animationFrameId = requestAnimationFrame(animate)
       } else {
-        // Animation complete, trigger callback
-        onComplete()
+        // Animation complete, trigger callback using ref to avoid re-running effect
+        onCompleteRef.current()
       }
     }
 
@@ -147,7 +153,7 @@ export function HyperspaceAnimation({ onComplete }: HyperspaceAnimationProps) {
       window.removeEventListener('resize', resizeCanvas)
       cancelAnimationFrame(animationFrameId)
     }
-  }, [onComplete])
+  }, [])
 
   return (
     <canvas
