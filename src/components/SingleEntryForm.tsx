@@ -4,7 +4,7 @@ import { ArrowLeft, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-re
 
 interface SingleEntryFormProps {
   onBack: () => void
-  onConfirm: () => void
+  onConfirm?: () => void
 }
 
 interface FormData {
@@ -76,47 +76,28 @@ export function SingleEntryForm({ onBack, onConfirm }: SingleEntryFormProps) {
     setResult(null)
     setErrorMessage(null)
 
-    // TEMPORARY: Demo mode for testing hyperspace animation (set to false when backend is ready)
-    const DEMO_MODE = false
+    // Optimistic transition: trigger hyperspace immediately
+    onConfirm?.()
 
+    // Background analysis (results won't be shown, but logged for debugging)
     try {
-      if (DEMO_MODE) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        // Simulate successful response
-        setResult('CONFIRMED')
+      const response = await fetch(`${API_BASE_URL}/api/single-predict`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
 
-        // Trigger hyperspace animation after successful analysis
-        setTimeout(() => {
-          onConfirm()
-        }, 1500)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Analysis failed:', data?.error ?? 'Analysis failed')
       } else {
-        const response = await fetch(`${API_BASE_URL}/api/single-predict`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data?.error ?? 'Analysis failed')
-        }
-
-        setResult(data.label)
-
-        // Trigger hyperspace animation after successful analysis
-        setTimeout(() => {
-          onConfirm()
-        }, 1500)
+        console.log('Analysis successful:', data)
       }
     } catch (error) {
       console.error('Analysis error:', error)
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to analyze data. Make sure the backend is running.'
-      )
     } finally {
       setIsAnalyzing(false)
     }

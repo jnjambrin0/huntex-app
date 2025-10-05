@@ -4,7 +4,7 @@ import { Upload, FileText, ArrowLeft, Loader2 } from 'lucide-react'
 
 interface BulkUploadFormProps {
   onBack: () => void
-  onConfirm: () => void
+  onConfirm?: () => void
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
@@ -69,6 +69,10 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
     setResults([])
     setRowErrors([])
 
+    // Optimistic transition: trigger hyperspace immediately
+    onConfirm?.()
+
+    // Background upload (results won't be shown, but logged for debugging)
     const formData = new FormData()
     formData.append('file', file)
 
@@ -81,21 +85,12 @@ export function BulkUploadForm({ onBack, onConfirm }: BulkUploadFormProps) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data?.error ?? 'Upload failed')
+        console.error('Upload failed:', data?.error ?? 'Upload failed')
+      } else {
+        console.log('Upload successful:', data)
       }
-
-      setResults(data.entries ?? [])
-      setRowErrors(data.errors ?? [])
-
-      // Trigger hyperspace animation after successful upload
-      setTimeout(() => {
-        onConfirm()
-      }, 1500)
     } catch (error) {
       console.error('Upload error:', error)
-      setUploadError(
-        error instanceof Error ? error.message : 'Failed to upload file. Make sure the backend is running.'
-      )
     } finally {
       setIsUploading(false)
     }
