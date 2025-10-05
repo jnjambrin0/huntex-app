@@ -37,9 +37,13 @@ function App() {
       {isHyperspaceActive && <HyperspaceAnimation onComplete={handleHyperspaceComplete} />}
 
       {/* Logo - stays fixed during hyperspace */}
-      <div className="fixed w-64 h-64 mb-2 z-40" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -60%)' }}>
+      <div
+        className="fixed w-64 h-64 mb-2 z-20"
+        style={{ top: '50%', left: '50%', transform: 'translate(-50%, -60%)' }}
+      >
         <img src="/logo.png" alt="HuntEX Logo" className="w-full h-full" />
       </div>
+
 
       {/* Content */}
       <AnimatePresence>
@@ -48,12 +52,19 @@ function App() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative z-10 flex flex-col items-center gap-4"
+            className="relative z-[60] flex flex-col items-center gap-4"
           >
             {/* Title */}
-            <h1 className="text-7xl text-white tracking-[0.2em] mt-72 border-gray-700" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+            <h1
+              className="text-7xl text-white tracking-[0.2em] mt-72"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                textShadow: "2px 2px 10px black"
+              }}
+            >
               HUNTEX
             </h1>
+
 
             {/* Subtitle */}
             <p className="text-lg text-gray-300 font-light -mt-2 pt-5">
