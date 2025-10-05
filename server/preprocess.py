@@ -93,29 +93,37 @@ def is_already_preprocessed(df: pd.DataFrame) -> bool:
         total_checks += 1
 
         # Check ranges for each feature
+        # Strategy: Use strict upper bounds to detect log-transformed data
+        # If ANY value exceeds the log-scale upper bound, it's definitely raw
         if feat == 'koi_period':
             # Log range: -0.7 to 2.86 | Raw range: 0.2 to 730
-            if -1.0 <= min_val <= 3.0 and -1.0 <= max_val <= 3.0:
+            # Upper bound: log10(730) = 2.86, so max_val > 3.5 → definitely raw
+            if max_val <= 3.5 and min_val >= -1.5:
                 indicators += 1
         elif feat == 'koi_depth':
             # Log range: 1.0 to 5.0 | Raw range: 10 to 100,000
-            if 0.5 <= min_val <= 5.5 and 0.5 <= max_val <= 5.5:
+            # Upper bound: log10(100000) = 5, so max_val > 6 → definitely raw
+            if max_val <= 6.0 and min_val >= 0.0:
                 indicators += 1
         elif feat == 'koi_prad':
             # Log range: -0.3 to 1.5 | Raw range: 0.5 to 30
-            if -1.0 <= min_val <= 2.0 and -1.0 <= max_val <= 2.0:
+            # Upper bound: log10(30) = 1.48, so max_val > 2.5 → definitely raw
+            if max_val <= 2.5 and min_val >= -1.0:
                 indicators += 1
         elif feat == 'koi_insol':
             # Log range: -1.5 to 3.0 | Raw range: 0.03 to 1000
-            if -2.0 <= min_val <= 3.5 and -2.0 <= max_val <= 3.5:
+            # Upper bound: log10(1000) = 3, so max_val > 4 → definitely raw
+            if max_val <= 4.0 and min_val >= -2.0:
                 indicators += 1
         elif feat == 'koi_srad':
             # Log range: -0.5 to 0.5 | Raw range: 0.3 to 3
-            if -1.0 <= min_val <= 1.0 and -1.0 <= max_val <= 1.0:
+            # Upper bound: log10(3) = 0.48, so max_val > 1.5 → definitely raw
+            if max_val <= 1.5 and min_val >= -1.0:
                 indicators += 1
         elif feat == 'koi_model_snr':
             # Log range: -1.0 to 4.0 | Raw range: 0.1 to 10000
-            if -1.5 <= min_val <= 4.5 and -1.5 <= max_val <= 4.5:
+            # Upper bound: log10(10000) = 4, so max_val > 5 → definitely raw
+            if max_val <= 5.0 and min_val >= -2.0:
                 indicators += 1
 
     # If >= 50% of checks indicate preprocessed data, classify as preprocessed

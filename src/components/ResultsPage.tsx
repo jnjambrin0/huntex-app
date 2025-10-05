@@ -35,16 +35,16 @@ export function ResultsPage({ results }: ResultsPageProps) {
   const starsRef = useRef<Star[]>([])
   const canvasContainerRef = useRef<HTMLDivElement>(null)
 
-  // Helper: normaliza el nombre para construir el slug usado por la web de la NASA
-  const makeNasaPath = (name: string) => {
-    if (!name) return ''
-    return name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '-')
+  // Helper: revert log10 transformations to show real physical values
+  // Backend returns log-transformed values, we need to convert back for display
+  const revertLogTransform = (value: number, feature: string): number => {
+    const logTransformedFeatures = ['koi_period', 'koi_depth', 'koi_prad', 'koi_insol', 'koi_srad', 'koi_model_snr']
+
+    if (logTransformedFeatures.includes(feature)) {
+      return Math.pow(10, value)
+    }
+
+    return value
   }
 
   useEffect(() => {
@@ -318,10 +318,26 @@ export function ResultsPage({ results }: ResultsPageProps) {
       randomStar.blinkCount = 0
       randomStar.isExoplanet = true
 
-      // Assign real backend data to the star
+      // Count how many of this label we've seen so far
+      const labelCount = validExoplanets
+        .slice(0, index + 1)
+        .filter(r => r.label === result.label)
+        .length
+
+      // Generate display name and current timestamp
+      const displayName = `${result.label} #${labelCount}`
+      const detectionDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+
+      // Assign real backend data to the star with generated metadata
       randomStar.exoplanetData = {
         ...result,
-        id: index
+        id: index,
+        name: displayName,
+        discoveryDate: detectionDate
       }
 
       // Update detected count
@@ -415,10 +431,10 @@ export function ResultsPage({ results }: ResultsPageProps) {
                       className="text-3xl text-white tracking-wider mb-2"
                       style={{ fontFamily: "'Bebas Neue', sans-serif" }}
                     >
-                      {selectedExoplanet.name}
+                      {selectedExoplanet.name || 'EXOPLANET'}
                     </h2>
                     <p className="text-sm text-gray-400">
-                      Discovered: {selectedExoplanet.discoveryDate}
+                      Detected: {selectedExoplanet.discoveryDate || 'Unknown'}
                     </p>
                   </div>
                   <button
@@ -429,32 +445,25 @@ export function ResultsPage({ results }: ResultsPageProps) {
                   </button>
                 </div>
 
-                {/* Badge */}
+                {/* Classification Badge */}
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="inline-flex items-center gap-3 px-4 py-2 bg-blue-500/20 border border-blue-500 rounded-full mb-6"
+                  className={`inline-flex items-center gap-3 px-4 py-2 rounded-full mb-6 ${
+                    selectedExoplanet.label === 'CONFIRMED'
+                      ? 'bg-green-500/20 border border-green-500'
+                      : 'bg-yellow-500/20 border border-yellow-500'
+                  }`}
                 >
-                  <Globe className="w-4 h-4 text-blue-400" />
-                  {selectedExoplanet?.name ? (
-                    (() => {
-                      const path = makeNasaPath(selectedExoplanet.name)
-                      const url = `https://science.nasa.gov/exoplanet-catalog/${path}`
-                      return (
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-semibold text-blue-200 hover:text-white px-3 py-1 rounded-md bg-blue-500/10 border border-transparent hover:bg-blue-500/20 transition-colors"
-                        >
-                          Ver en NASA: {selectedExoplanet.name}
-                        </a>
-                      )
-                    })()
-                  ) : (
-                    <span className="text-sm font-semibold text-blue-400">CONFIRMED EXOPLANET</span>
-                  )}
+                  <Globe className={`w-4 h-4 ${
+                    selectedExoplanet.label === 'CONFIRMED' ? 'text-green-400' : 'text-yellow-400'
+                  }`} />
+                  <span className={`text-sm font-semibold ${
+                    selectedExoplanet.label === 'CONFIRMED' ? 'text-green-300' : 'text-yellow-300'
+                  }`}>
+                    {selectedExoplanet.label}
+                  </span>
                 </motion.div>
 
                 {/* Datos */}
@@ -462,37 +471,37 @@ export function ResultsPage({ results }: ResultsPageProps) {
                   <DataItem
                     icon={<Orbit className="w-5 h-5" />}
                     label="Orbital Period"
-                    value={`${selectedExoplanet.koi_period.toFixed(2)} days`}
+                    value={`${revertLogTransform(selectedExoplanet.koi_period, 'koi_period').toFixed(2)} days`}
                     delay={0.15}
                   />
                   <DataItem
                     icon={<Globe className="w-5 h-5" />}
                     label="Planet Radius"
-                    value={`${selectedExoplanet.koi_prad.toFixed(2)} R⊕`}
+                    value={`${revertLogTransform(selectedExoplanet.koi_prad, 'koi_prad').toFixed(2)} R⊕`}
                     delay={0.2}
                   />
                   <DataItem
                     icon={<Thermometer className="w-5 h-5" />}
                     label="Equilibrium Temperature"
-                    value={`${selectedExoplanet.koi_teq.toFixed(0)} K`}
+                    value={`${revertLogTransform(selectedExoplanet.koi_teq, 'koi_teq').toFixed(0)} K`}
                     delay={0.25}
                   />
                   <DataItem
                     icon={<StarIcon className="w-5 h-5" />}
                     label="Stellar Effective Temp"
-                    value={`${selectedExoplanet.koi_steff.toFixed(0)} K`}
+                    value={`${revertLogTransform(selectedExoplanet.koi_steff, 'koi_steff').toFixed(0)} K`}
                     delay={0.3}
                   />
                   <DataItem
                     icon={<Gauge className="w-5 h-5" />}
                     label="Transit Depth"
-                    value={`${selectedExoplanet.koi_depth.toFixed(0)} ppm`}
+                    value={`${revertLogTransform(selectedExoplanet.koi_depth, 'koi_depth').toFixed(0)} ppm`}
                     delay={0.35}
                   />
                   <DataItem
                     icon={<Radar className="w-5 h-5" />}
                     label="Signal-to-Noise Ratio"
-                    value={selectedExoplanet.koi_model_snr.toFixed(1)}
+                    value={revertLogTransform(selectedExoplanet.koi_model_snr, 'koi_model_snr').toFixed(1)}
                     delay={0.4}
                   />
                 </div>
@@ -508,23 +517,23 @@ export function ResultsPage({ results }: ResultsPageProps) {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-gray-500">Transit Duration</p>
-                      <p className="text-white font-medium">{selectedExoplanet.koi_duration.toFixed(2)} hrs</p>
+                      <p className="text-white font-medium">{revertLogTransform(selectedExoplanet.koi_duration, 'koi_duration').toFixed(2)} hrs</p>
                     </div>
                     <div>
                       <p className="text-gray-500">Insolation Flux</p>
-                      <p className="text-white font-medium">{selectedExoplanet.koi_insol.toFixed(2)}</p>
+                      <p className="text-white font-medium">{revertLogTransform(selectedExoplanet.koi_insol, 'koi_insol').toFixed(2)} F⊕</p>
                     </div>
                     <div>
                       <p className="text-gray-500">Stellar Log(g)</p>
-                      <p className="text-white font-medium">{selectedExoplanet.koi_slogg.toFixed(2)}</p>
+                      <p className="text-white font-medium">{revertLogTransform(selectedExoplanet.koi_slogg, 'koi_slogg').toFixed(2)}</p>
                     </div>
                     <div>
                       <p className="text-gray-500">Stellar Radius</p>
-                      <p className="text-white font-medium">{selectedExoplanet.koi_srad.toFixed(2)} R☉</p>
+                      <p className="text-white font-medium">{revertLogTransform(selectedExoplanet.koi_srad, 'koi_srad').toFixed(2)} R☉</p>
                     </div>
                     <div>
                       <p className="text-gray-500">Impact Parameter</p>
-                      <p className="text-white font-medium">{selectedExoplanet.koi_impact.toFixed(3)}</p>
+                      <p className="text-white font-medium">{revertLogTransform(selectedExoplanet.koi_impact, 'koi_impact').toFixed(3)}</p>
                     </div>
                   </div>
                 </motion.div>

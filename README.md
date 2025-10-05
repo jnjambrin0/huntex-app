@@ -76,7 +76,7 @@ CSV file upload for batch analysis:
 ```bash
 # Clone the repository
 git clone https://github.com/jnjambrin0/huntex-app
-cd HuntEX-front/huntex-app
+cd huntex-app
 
 # Install dependencies
 npm install
