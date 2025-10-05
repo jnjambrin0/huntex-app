@@ -183,7 +183,7 @@ export function BulkUploadForm({ onBack, onConfirm, onResultsReceived }: BulkUpl
           koi_srad: entry.koi_srad,
           koi_model_snr: entry.koi_model_snr,
           koi_impact: entry.koi_impact,
-          name: `KOI-${entry.row.toString().padStart(4, '0')}`,
+          name: `KOI-${(entry.row ?? 0).toString().padStart(4, '0')}`,
           discoveryDate: new Date().toLocaleDateString()
         })) ?? []
 
