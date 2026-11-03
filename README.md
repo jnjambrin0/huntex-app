@@ -25,6 +25,10 @@ The results page shows the `CONFIRMED` and `CANDIDATE` objects revealed one at a
 
 Errors from the API are only written to the browser console; the UI does not display them.
 
+## Demo
+
+Live deployment: https://huntex-app.vercel.app (the homepage set in the GitHub repository settings; it answered HTTP 200 when checked). The deployed build calls whatever API `VITE_API_BASE_URL` pointed to at build time, which this README cannot verify.
+
 ## Stack
 
 **Frontend** (from `package.json`, version ranges as declared):
@@ -187,10 +191,6 @@ Scripts from `package.json`:
 | `npm run server` | Starts the Express API (`server/index.js`) |
 
 **Tests: the repository has no automated test suite.** There are no test files and no test script. `npm run lint` and `npm run build` are the only automated checks. The Python code in `Improved-RF/` has no tests either. Training is run with `python Improved-RF/main.py`, as described in `Improved-RF/README.md`; I did not run training.
-
-## Roadmap
-
-Not included: the repository has no TODO file, roadmap or open-issue list to base one on.
 
 ## License
 
